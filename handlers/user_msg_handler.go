@@ -135,6 +135,8 @@ func buildUserReply(reply string) string {
 		trimText := textSplit[0]
 		reply = strings.Trim(reply, trimText)
 	}
+	println('1')
+	println(reply)
 	reply = strings.TrimSpace(reply)
 
 	reply = strings.TrimSpace(reply)

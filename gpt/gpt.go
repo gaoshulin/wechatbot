@@ -25,22 +25,27 @@ type ChatGPTResponseBody struct {
 	Usage   map[string]interface{} `json:"usage"`
 }
 
+type Message struct {
+	Role    string `json:"role"`
+	Content string `json:"content"`
+}
+
 type ChoiceItem struct {
-	Text         string `json:"text"`
-	Index        int    `json:"index"`
-	Logprobs     int    `json:"logprobs"`
-	FinishReason string `json:"finish_reason"`
+	Text         string  `json:"text"`
+	Index        int     `json:"index"`
+	Message      Message `json:"message"`
+	FinishReason string  `json:"finish_reason"`
 }
 
 // ChatGPTRequestBody 响应体
 type ChatGPTRequestBody struct {
-	Model            string  `json:"model"`
-	Prompt           string  `json:"prompt"`
-	MaxTokens        uint    `json:"max_tokens"`
-	Temperature      float64 `json:"temperature"`
-	TopP             int     `json:"top_p"`
-	FrequencyPenalty int     `json:"frequency_penalty"`
-	PresencePenalty  int     `json:"presence_penalty"`
+	Model            string    `json:"model"`
+	Messages         []Message `json:"messages"`
+	MaxTokens        uint      `json:"max_tokens"`
+	Temperature      float64   `json:"temperature"`
+	TopP             int       `json:"top_p"`
+	FrequencyPenalty int       `json:"frequency_penalty"`
+	PresencePenalty  int       `json:"presence_penalty"`
 }
 
 // Completions gtp文本模型回复
@@ -51,8 +56,17 @@ type ChatGPTRequestBody struct {
 func Completions(msg string) (string, error) {
 	cfg := config.LoadConfig()
 	requestBody := ChatGPTRequestBody{
-		Model:            cfg.Model,
-		Prompt:           msg,
+		Model: cfg.Model,
+		Messages: []Message{
+			{
+				Role:    "system",
+				Content: "You are a helpful assistant.",
+			},
+			{
+				Role:    "user",
+				Content: msg,
+			},
+		},
 		MaxTokens:        cfg.MaxTokens,
 		Temperature:      cfg.Temperature,
 		TopP:             1,
@@ -61,11 +75,30 @@ func Completions(msg string) (string, error) {
 	}
 	requestData, err := json.Marshal(requestBody)
 
+	// ========= 创建代理服务器，本地使用需要 =============
+	// 创建一个代理 URL
+	//proxyURL, err := url.Parse("http://127.0.0.1:7890")
+	//if err != nil {
+	//	log.Fatal(err)
+	//}
+	//// 创建一个自定义的 Transport，并设置代理
+	//transport := &http.Transport{
+	//	Proxy: http.ProxyURL(proxyURL),
+	//}
+
+	//// 创建一个使用自定义 Transport 的 HTTP 客户端
+	//client := &http.Client{
+	//	Transport: transport,
+	//	Timeout: 30 * time.Second,
+	//}
+	// =================
+
+	client := &http.Client{Timeout: 30 * time.Second}
 	if err != nil {
 		return "", err
 	}
 	logger.Info(fmt.Sprintf("request gpt json string : %v", string(requestData)))
-	req, err := http.NewRequest("POST", BASEURL+"completions", bytes.NewBuffer(requestData))
+	req, err := http.NewRequest("POST", BASEURL+"chat/completions", bytes.NewBuffer(requestData))
 	if err != nil {
 		return "", err
 	}
@@ -73,7 +106,6 @@ func Completions(msg string) (string, error) {
 	apiKey := config.LoadConfig().ApiKey
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+apiKey)
-	client := &http.Client{Timeout: 30 * time.Second}
 	response, err := client.Do(req)
 	if err != nil {
 		return "", err
@@ -98,7 +130,9 @@ func Completions(msg string) (string, error) {
 
 	var reply string
 	if len(gptResponseBody.Choices) > 0 {
-		reply = gptResponseBody.Choices[0].Text
+		//reply = gptResponseBody.Choices[0].Text
+		content := gptResponseBody.Choices[0].Message.Content
+		return content, nil
 	}
 	logger.Info(fmt.Sprintf("gpt response text: %s ", reply))
 	return reply, nil

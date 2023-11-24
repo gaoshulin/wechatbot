@@ -41,8 +41,8 @@ func LoadConfig() *Configuration {
 		config = &Configuration{
 			AutoPass:          false,
 			SessionTimeout:    60,
-			MaxTokens:         512,
-			Model:             "text-davinci-003",
+			MaxTokens:         1024,
+			Model:             "gpt-3.5-turbo",
 			Temperature:       0.9,
 			SessionClearToken: "下一个问题",
 		}
