@@ -10,6 +10,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"net/url"
 	"time"
 )
 
@@ -77,23 +78,23 @@ func Completions(msg string) (string, error) {
 
 	// ========= 创建代理服务器，本地使用需要 =============
 	// 创建一个代理 URL
-	//proxyURL, err := url.Parse("http://127.0.0.1:7890")
-	//if err != nil {
-	//	log.Fatal(err)
-	//}
-	//// 创建一个自定义的 Transport，并设置代理
-	//transport := &http.Transport{
-	//	Proxy: http.ProxyURL(proxyURL),
-	//}
+	proxyURL, err := url.Parse("http://127.0.0.1:7890")
+	if err != nil {
+		log.Fatal(err)
+	}
+	// 创建一个自定义的 Transport，并设置代理
+	transport := &http.Transport{
+		Proxy: http.ProxyURL(proxyURL),
+	}
 
 	//// 创建一个使用自定义 Transport 的 HTTP 客户端
-	//client := &http.Client{
-	//	Transport: transport,
-	//	Timeout: 30 * time.Second,
-	//}
+	client := &http.Client{
+		Transport: transport,
+		Timeout:   30 * time.Second,
+	}
 	// =================
 
-	client := &http.Client{Timeout: 30 * time.Second}
+	client = &http.Client{Timeout: 30 * time.Second}
 	if err != nil {
 		return "", err
 	}
